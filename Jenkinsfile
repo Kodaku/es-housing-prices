@@ -36,15 +36,5 @@ pipeline {
                 powershell "docker rm ${container_name}"
             }
         }
-
-        stage("Push to DockerHub") {
-            steps {
-                script {
-                    docker.withRegistry("https://registry.hub.docker.com", registryCredential) {
-                        dockerImage.push()
-                    }
-                }
-            }
-        }
     }
 }
