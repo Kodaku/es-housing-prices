@@ -1,8 +1,8 @@
-import os
-
 import pandas as pd
 from elasticsearch import Elasticsearch
-import json
+from add_data import add_data
+from create_es_index import es_create_index_if_not_exists
+
 
 es = Elasticsearch(
     hosts=['http://host.docker.internal:9200'],
@@ -18,28 +18,8 @@ for data_type, column in zip(prices.dtypes, prices.columns):
 
 print(data_types)
 
-columns = prices.columns
-
-actions = []
-index = 1
-for i, price_row in prices.iterrows():
-    price = {}
-    for column in columns:
-        # print(type(price_row[column]))
-        # print(isinstance(price_row[column], int))
-        if str(price_row[column]) == "nan":
-            if data_types[column] == "object":
-                price_row[column] = "UK"
-            elif data_types[column] == "int64":
-                price_row[column] = 0
-            elif data_types[column] == "float64":
-                price_row[column] = 0.0
-        price[column] = price_row[column]
-    action = {"index": {"_index": "house_prices", "_id": index}, "_op_type": "upsert"}
-    doc = price
-    actions.append(action)
-    actions.append(json.dumps(doc))
-    index += 1
-
-res = es.bulk(index="house_prices", operations=actions)
-print(res)
+if es.indices.exists(index="house_prices"):
+    add_data(es, prices, data_types)
+else:
+    es_create_index_if_not_exists(elastic_instance=es, created_index="house_prices")
+    add_data(es=es, prices=prices, data_types=data_types)
